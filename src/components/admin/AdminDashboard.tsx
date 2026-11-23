@@ -38,6 +38,7 @@ export function AdminDashboard({
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deleteSuccessMessage, setDeleteSuccessMessage] = useState<string | null>(null);
+  const [ephemeralDbWarning, setEphemeralDbWarning] = useState(false);
 
   const loadOverview = async () => {
     const res = await fetch('/api/admin/overview', {
@@ -54,6 +55,14 @@ export function AdminDashboard({
 
   useEffect(() => {
     loadOverview();
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then((h) => {
+        if (h && h.persistent === false) {
+          setEphemeralDbWarning(true);
+        }
+      })
+      .catch(() => {});
   }, [token]);
 
   const handleDataChanged = () => {
@@ -174,6 +183,12 @@ export function AdminDashboard({
                   <span>সব অর্ডার মুছুন</span>
                 </button>
               </div>
+
+              {ephemeralDbWarning && (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs sm:text-sm text-amber-900 leading-relaxed">
+                  <strong>গুরুত্বপূর্ণ:</strong> বর্তমানে অস্থায়ী সার্ভারলেস স্টোরেজ ব্যবহৃত হচ্ছে। Vercel-এ স্থায়ীভাবে পণ্য, ছবি ও অর্ডার সংরক্ষণ করতে Vercel Project Settings → Environment Variables-এ Supabase বা PostgreSQL-এর <code className="font-mono">DATABASE_URL</code> যোগ করুন।
+                </div>
+              )}
 
               {deleteSuccessMessage && (
                 <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-medium text-emerald-800">

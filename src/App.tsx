@@ -52,14 +52,34 @@ export default function App() {
   const [adminNeedsSetup, setAdminNeedsSetup] = useState<boolean>(false);
 
   const fetchStorefront = useCallback(async () => {
+    const maxAttempts = 3;
     try {
-      const res = await fetch('/api/storefront');
-      if (!res.ok) throw new Error('Failed to load storefront');
-      const data: StorefrontData = await res.json();
-      setStorefront(data);
-      setLoadError(null);
-    } catch {
-      setLoadError('স্টোরের তথ্য লোড করতে সমস্যা হয়েছে।');
+      let lastError: Error | null = null;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const res = await fetch('/api/storefront');
+          const contentType = res.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            throw new Error(`সার্ভার থেকে সঠিক JSON পাওয়া যায়নি (HTTP ${res.status})`);
+          }
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data?.error || `HTTP ${res.status}`);
+          }
+          setStorefront(data as StorefrontData);
+          setLoadError(null);
+          return;
+        } catch (err: any) {
+          lastError = err instanceof Error ? err : new Error(String(err || 'Unknown error'));
+          if (attempt < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, 900 * attempt));
+          }
+        }
+      }
+      if (lastError) {
+        console.error('Storefront load error:', lastError);
+        setLoadError(lastError.message || 'স্টোরের তথ্য লোড করতে সমস্যা হয়েছে।');
+      }
     } finally {
       setLoading(false);
     }
