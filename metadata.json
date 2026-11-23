@@ -1,0 +1,6 @@
+{
+  "name": "সোনালী হাট — বাংলাদেশি ই-কমার্স স্টোর",
+  "description": "বাংলাদেশের ঐতিহ্যবাহী ও আধুনিক পণ্যের নির্ভরযোগ্য অনলাইন শপ — ক্যাশ অন ডেলিভারি, সরাসরি অর্ডার এবং সম্পূর্ণ অ্যাডমিন ড্যাশবোর্ড।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
