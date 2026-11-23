@@ -7,9 +7,10 @@ import { DeleteAllOrdersModal } from './DeleteAllOrdersModal';
 interface AdminOrdersProps {
   token: string;
   onDataChanged: () => void;
+  onUnauthorized?: () => void;
 }
 
-export function AdminOrders({ token, onDataChanged }: AdminOrdersProps) {
+export function AdminOrders({ token, onDataChanged, onUnauthorized }: AdminOrdersProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -32,6 +33,10 @@ export function AdminOrders({ token, onDataChanged }: AdminOrdersProps) {
       const res = await fetch(`/api/admin/orders?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        onUnauthorized?.();
+        return;
+      }
       const data = await res.json();
       if (res.ok) {
         setOrders(data);
@@ -335,6 +340,7 @@ export function AdminOrders({ token, onDataChanged }: AdminOrdersProps) {
         <DeleteAllOrdersModal
           token={token}
           onClose={() => setShowDeleteAllModal(false)}
+          onUnauthorized={onUnauthorized}
           onDeleted={() => {
             setShowDeleteAllModal(false);
             setSelectedOrder(null);

@@ -13,11 +13,11 @@ import { AdminLogin } from './components/admin/AdminLogin';
 import { Order, Product, StorefrontData } from './types/ecommerce';
 import { toBengaliDigits } from './utils/formatters';
 
-const SECRET_ADMIN_PATH = '/dsk-portal-8421';
+const ADMIN_PATH = '/admin';
 
 function getInitialViewFromPath(): StoreView {
-  const pathname = window.location.pathname;
-  if (pathname === SECRET_ADMIN_PATH) return 'admin';
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (pathname === ADMIN_PATH || pathname.startsWith(`${ADMIN_PATH}/`)) return 'admin';
   if (pathname === '/track') return 'track';
   return 'home';
 }
@@ -50,6 +50,7 @@ export default function App() {
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [adminUsername, setAdminUsername] = useState<string>('');
   const [adminNeedsSetup, setAdminNeedsSetup] = useState<boolean>(false);
+  const [adminStatusLoading, setAdminStatusLoading] = useState<boolean>(false);
 
   const fetchStorefront = useCallback(async () => {
     const maxAttempts = 3;
@@ -102,12 +103,14 @@ export default function App() {
   // Check Admin setup/auth status when entering admin view
   useEffect(() => {
     if (view !== 'admin') return;
+    let active = true;
     const checkStatus = async () => {
+      setAdminStatusLoading(true);
       try {
         const headers: Record<string, string> = {};
         if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
         const res = await fetch('/api/admin/auth/status', { headers });
-        if (res.ok) {
+        if (res.ok && active) {
           const data = await res.json();
           setAdminNeedsSetup(Boolean(data.needsSetup));
           if (!data.authenticated && adminToken) {
@@ -116,9 +119,14 @@ export default function App() {
         }
       } catch {
         // ignore network errors
+      } finally {
+        if (active) setAdminStatusLoading(false);
       }
     };
     checkStatus();
+    return () => {
+      active = false;
+    };
   }, [view, adminToken]);
 
   // Browser back/forward button support
@@ -133,7 +141,7 @@ export default function App() {
   const handleNavigate = (nextView: StoreView, sectionId?: string) => {
     setView(nextView);
     const targetPath =
-      nextView === 'admin' ? SECRET_ADMIN_PATH : nextView === 'track' ? '/track' : '/';
+      nextView === 'admin' ? ADMIN_PATH : nextView === 'track' ? '/track' : '/';
     if (window.location.pathname !== targetPath) {
       window.history.pushState({}, '', targetPath);
     }
@@ -252,6 +260,16 @@ export default function App() {
   // Admin Console View
   if (view === 'admin') {
     if (!adminToken) {
+      if (adminStatusLoading) {
+        return (
+          <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
+            <div className="text-center space-y-3">
+              <div className="w-8 h-8 border-2 border-stone-900 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-sm text-stone-600">অ্যাডমিন প্যানেল যাচাই করা হচ্ছে...</p>
+            </div>
+          </div>
+        );
+      }
       return (
         <AdminLogin
           needsSetup={adminNeedsSetup}

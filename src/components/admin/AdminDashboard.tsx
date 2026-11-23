@@ -307,7 +307,7 @@ export function AdminDashboard({
           )}
 
           {activeTab === 'orders' && (
-            <AdminOrders token={token} onDataChanged={handleDataChanged} />
+            <AdminOrders token={token} onDataChanged={handleDataChanged} onUnauthorized={onLogout} />
           )}
 
           {(activeTab === 'banners' || activeTab === 'customization' || activeTab === 'delivery') && (
